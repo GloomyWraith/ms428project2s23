@@ -25,10 +25,12 @@ recursos = [float(b) for b in input().split(sep = " ")]
 
 
 # Define partições e os custos básicos e não-básicos iniciais
-particao_basica = A[:,:linhas]
-particao_nbasica = A[:,(linhas-colunas):]
-custos_basicos = custos[:linhas]
-custos_nbasicos = custos[(linhas-colunas):]
+particao_basica = A[:,(linhas-colunas):].copy()
+particao_nbasica = A[:,:linhas].copy()
+custos_basicos = custos[(linhas-colunas):].copy()
+custos_nbasicos = custos[:linhas].copy()
+
+k = 0 # Define contador
 
 while True:
     # Calcula a solução básica factível Xb
@@ -50,15 +52,29 @@ while True:
         print("Solução atual é ótima.")
         print("Valor ótimo da solução: ", valor_atual)
         print("Variáveis ótimas: ", xb)
-    else: # Não irá no programa final
-        print("Solução atual não é ótima.")
-        print("Valor atual da solução: ", valor_atual)
-        print("Variáveis: ", xb)
+        break
+    else:
+        # Cálculo da Direção Simplex
+        direcao_simplex = np.linalg.solve(particao_basica, particao_nbasica[:,[indice_entrada_base]])
 
-    # Cálculo da Direção Simplex
-    direcao_simplex = np.linalg.solve(particao_basica, particao_nbasica[:,[indice_entrada_base]])
+        if True in (direcao_simplex <= 0):
+            print("Problema não tem solução ótima finita.")
+            break
+        else:
+            passo = xb/direcao_simplex
+            epsilon = min(passo)
+            indice_saida_base = np.where(passo == epsilon)[0][0]
+    
+    # Atualiza partições básica e não-básica
+    entrada_base = particao_nbasica[:,indice_entrada_base].copy()
+    saida_base = particao_basica[:,indice_saida_base].copy()
+    particao_basica[:,indice_saida_base] = entrada_base
+    particao_nbasica[:,indice_entrada_base] = saida_base
 
-    if True in (direcao_simplex <= 0):
-        print("Problema não tem solução ótima finita.")
-    # else:
-        # epsilon =
+    # Atualiza custos básicos e não-básicos
+    entrada_custo = custos_nbasicos[indice_entrada_base]
+    saida_custo = custos_basicos[indice_saida_base]
+    custos_basicos[indice_saida_base] = entrada_custo
+    custos_nbasicos[indice_entrada_base] = saida_custo
+
+    k+=1 # Atualiza o contador
