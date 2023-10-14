@@ -26,9 +26,9 @@ def entrada():
     custos = [float(c) for c in input("Informe o vetor dos custos ("+str(colunas)+" entradas separadas por um espaço, incluindo zeros para as variáveis de folga): ").split(sep = " ")]
 
     #Printa os valores lidos para confirmar se tudo correu bem.
-    print('A = {}\n'.format(A))
-    print('b = {}\n'.format(recursos))
-    print('c = {}\n'.format(custos))
+    # print('A = {}\n'.format(A))
+    # print('b = {}\n'.format(recursos))
+    # print('c = {}\n'.format(custos))
     return A, recursos, custos, linhas, colunas
 
 
@@ -43,11 +43,12 @@ def part(A,custos, linhas, colunas):
 
 # Procura uma solução básica factível, Xb.
 def solucao_basica(particao_basica, recursos):
-    xb = np.linalg.solve(particao_basica, recursos)
-    if(min(xb) < 0 or min(xb) == None):
-        return None
-    else:
+    try:
+        xb = np.linalg.solve(particao_basica, recursos)
         return xb
+    except np.linalg.LinAlgError:
+        print("Solução básica factível não encontrada.")
+        exit(0)
     
 #Função que calcula o valor da função objetivo considerando apenas a parte básica.
 def objetivo(custos_basicos, xb):
@@ -100,8 +101,8 @@ def main():
     A, recursos, custos, linhas, colunas = entrada()
     particao_basica, particao_nbasica, custos_basicos, custos_nbasicos = part(A,custos, linhas, colunas)
     xb = solucao_basica(particao_basica, recursos) #Verificar se precisamos iterar sobre todas as possiveis formas de particionar.
-    if(min(xb) == None):
-        print('Solução básica factível não encontrada.')
+    # if(min(xb) == None):
+        #print('Solução básica factível não encontrada.')
         # exit(0) #Termina a execução do programa.
 
     custos_relativos = relativos(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, linhas, colunas)
@@ -121,7 +122,7 @@ def main():
                                                                                                 indice_saida_base)
             #refaz custo relativo
             custos_relativos = relativos(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, linhas, colunas)
-
+            xb = solucao_basica(particao_basica, recursos)
     if(otima(custos_relativos)):
         valor_atual = objetivo(custos_basicos, xb)
 
@@ -129,3 +130,5 @@ def main():
         print("Valor ótimo da solução: ", valor_atual)
         print("Variáveis ótimas: ", xb)
         # exit(0)
+
+main()
