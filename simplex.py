@@ -25,6 +25,8 @@ def entrada():
     #Atribui às entradas de c (vetor de custos) os valores do input do usuário.
     custos = [float(c) for c in input("Informe o vetor dos custos ("+str(colunas)+" entradas separadas por um espaço, incluindo zeros para as variáveis de folga): ").split(sep = " ")]
 
+    #TO DO: criar uma lista de tamanho len(custos) para lembrar o indice de quais var. estão na base.
+
     #Printa os valores lidos para confirmar se tudo correu bem.
     # print('A = {}\n'.format(A))
     # print('b = {}\n'.format(recursos))
@@ -81,6 +83,7 @@ def indice_saida(xb, particao_basica, particao_nbasica, indice_entrada_base):
             return indice_saida_base
     return (-1)
 
+#TO DO: Incluir aqui um script para lembrar quais variaveis estão na base atualmente
 def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, indice_entrada_base, indice_saida_base):
     # Realiza troca das colunas da base
     entrada_base = particao_nbasica[:,indice_entrada_base].copy()
@@ -96,14 +99,20 @@ def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasico
 
     return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos
 
+#TO DO: Incluir na impressão os indices da variáveis.
+def imprime_otima(xb, custos_basicos):
+    #Calcula o valor da solução ótima
+    valor_atual = objetivo(custos_basicos, xb)
+    #Impressão
+    print("Solução atual é ótima.")
+    print("Valor ótimo da solução: ", valor_atual)
+    print("Variáveis ótimas: ", xb)
+
 def main():
     
     A, recursos, custos, linhas, colunas = entrada()
     particao_basica, particao_nbasica, custos_basicos, custos_nbasicos = part(A,custos, linhas, colunas)
-    xb = solucao_basica(particao_basica, recursos) #Verificar se precisamos iterar sobre todas as possiveis formas de particionar.
-    # if(min(xb) == None):
-        #print('Solução básica factível não encontrada.')
-        # exit(0) #Termina a execução do programa.
+    xb = solucao_basica(particao_basica, recursos)
 
     custos_relativos = relativos(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, linhas, colunas)
     while(otima(custos_relativos) != -1):
@@ -111,7 +120,7 @@ def main():
         indice_saida_base = indice_saida(xb, particao_basica, particao_nbasica, indice_entrada_base) #direcao de passo
         if indice_saida_base == (-1): #Se direcao é negativa ... O problema é ilimitado.
             print("O problema não tem solução ótima finita.")
-            # exit(0) #break;
+            exit(0)
         else:
             #Funcao que faz a troca (lembrar de informar quais variaveis estao em cada particao na iteracao atual).
             particao_basica, particao_nbasica, custos_basicos, custos_nbasicos = troca_base(particao_basica,
@@ -124,11 +133,7 @@ def main():
             custos_relativos = relativos(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, linhas, colunas)
             xb = solucao_basica(particao_basica, recursos)
     if(otima(custos_relativos)):
-        valor_atual = objetivo(custos_basicos, xb)
-
-        print("Solução atual é ótima.")
-        print("Valor ótimo da solução: ", valor_atual)
-        print("Variáveis ótimas: ", xb)
-        # exit(0)
+        imprime_otima(xb, custos_basicos)
+        exit(0)
 
 main()
