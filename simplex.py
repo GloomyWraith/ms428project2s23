@@ -34,14 +34,17 @@ def entrada():
     return A, recursos, custos, linhas, colunas
 
 
-#Função que particiona o PL.
+
+#Função que particiona o PL e cria o vetor de indices das variaveis
 def part(A,custos, linhas, colunas):
     # Define partições e os custos básicos e não-básicos
     particao_basica = A[:,(linhas-colunas):].copy()
     particao_nbasica = A[:,:linhas].copy()
     custos_basicos = custos[(linhas-colunas):].copy()
     custos_nbasicos = custos[:linhas].copy()
-    return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos
+    # vetor_indicial = list(range(1, colunas+1))
+    vetor_indicial = list(range(colunas))
+    return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial
 
 # Procura uma solução básica factível, Xb.
 def solucao_basica(particao_basica, recursos):
@@ -83,8 +86,7 @@ def indice_saida(xb, particao_basica, particao_nbasica, indice_entrada_base):
             return indice_saida_base
     return (-1)
 
-#TO DO: Incluir aqui um script para lembrar quais variaveis estão na base atualmente
-def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, indice_entrada_base, indice_saida_base):
+def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, indice_entrada_base, indice_saida_base, vetor_indicial, linhas):
     # Realiza troca das colunas da base
     entrada_base = particao_nbasica[:,indice_entrada_base].copy()
     saida_base = particao_basica[:,indice_saida_base].copy()
@@ -97,21 +99,33 @@ def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasico
     custos_basicos[indice_saida_base] = entrada_custo
     custos_nbasicos[indice_entrada_base] = saida_custo
 
-    return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos
+    # Realiza atualização do vetor indicial
+    entrada_indicial = vetor_indicial[indice_entrada_base]
+    saida_indicial = vetor_indicial[indice_saida_base] + linhas
+    vetor_indicial[saida_indicial] = entrada_indicial
+    vetor_indicial[entrada_indicial] = saida_indicial
+
+
+
+    return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial
 
 #TO DO: Incluir na impressão os indices da variáveis.
-def imprime_otima(xb, custos_basicos):
+def imprime_otima(xb, custos_basicos, indice_final):
     #Calcula o valor da solução ótima
     valor_atual = objetivo(custos_basicos, xb)
+    for i in range(len(indice_final)):
+        indice_final[i] = "x" + str(indice_final[i]) 
+
     #Impressão
     print("Solução atual é ótima.")
     print("Valor ótimo da solução: ", valor_atual)
-    print("Variáveis ótimas: ", xb)
+    print(f"Variáveis ótimas: {indice_final} = {xb}\nAs variáveis restantes são 0.")
 
 def main():
     
     A, recursos, custos, linhas, colunas = entrada()
-    particao_basica, particao_nbasica, custos_basicos, custos_nbasicos = part(A,custos, linhas, colunas)
+    particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial = part(A,custos, linhas, colunas)
+    tamanho_basico = len(custos_basicos)
     xb = solucao_basica(particao_basica, recursos)
 
     custos_relativos = relativos(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, linhas, colunas)
@@ -123,17 +137,23 @@ def main():
             exit(0)
         else:
             #Funcao que faz a troca (lembrar de informar quais variaveis estao em cada particao na iteracao atual).
-            particao_basica, particao_nbasica, custos_basicos, custos_nbasicos = troca_base(particao_basica,
+            particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial = troca_base(particao_basica,
                                                                                                 particao_nbasica,
                                                                                                 custos_basicos,
                                                                                                 custos_nbasicos,
                                                                                                 indice_entrada_base,
-                                                                                                indice_saida_base)
+                                                                                                indice_saida_base,
+                                                                                                vetor_indicial,
+                                                                                                linhas)
+            
+            
+
             #refaz custo relativo
             custos_relativos = relativos(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, linhas, colunas)
             xb = solucao_basica(particao_basica, recursos)
     if(otima(custos_relativos)):
-        imprime_otima(xb, custos_basicos)
+        indice_final = [vetor_indicial[i]+1 for i in range(len(custos)-tamanho_basico, len(custos))]
+        imprime_otima(xb, custos_basicos, indice_final)
         exit(0)
 
 main()
