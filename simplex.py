@@ -7,6 +7,7 @@ Daniel Reis, Matheus Alves, Mariane Santana.
 import numpy as np
 #------------------------------HEADER------------------------------#
 
+
 #Função que lê da entrada as informações relevantes para o PL.
 def entrada():
     #Lê o tamanho da matriz de restrições
