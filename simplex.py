@@ -39,10 +39,10 @@ def entrada():
 #Função que particiona o PL e cria o vetor de indices das variaveis
 def part(A,custos, linhas, colunas):
     # Define partições e os custos básicos e não-básicos
-    particao_basica = A[:,(linhas-colunas):].copy()
-    particao_nbasica = A[:,:linhas].copy()
-    custos_basicos = custos[(linhas-colunas):].copy()
-    custos_nbasicos = custos[:linhas].copy()
+    particao_basica = A[:,abs(linhas-colunas):].copy()
+    particao_nbasica = A[:,:abs(linhas-colunas)].copy()
+    custos_basicos = custos[abs(linhas-colunas):].copy()
+    custos_nbasicos = custos[:abs(linhas-colunas)].copy()
     # vetor_indicial = list(range(1, colunas+1))
     vetor_indicial = list(range(colunas))
     return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial
@@ -53,6 +53,7 @@ def solucao_basica(particao_basica, recursos):
         xb = np.linalg.solve(particao_basica, recursos)
         return xb
     except np.linalg.LinAlgError:
+        # variavel_artificial = np.
         print("Solução básica factível não encontrada.")
         exit(0)
     
@@ -81,19 +82,21 @@ def indice_saida(xb, particao_basica, particao_nbasica, indice_entrada_base):
     direcao_simplex = np.linalg.solve(particao_basica, particao_nbasica[:,indice_entrada_base])
     for i in list((direcao_simplex <= 0)):
         if i == False:
-            passo = xb/direcao_simplex
+            np.seterr(divide="ignore")
+            passo = np.divide(xb,direcao_simplex)
             epsilon = min(passo)
             indice_saida_base = np.where(passo == epsilon)[0][0]
             return indice_saida_base
     return (-1)
 
-def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, indice_entrada_base, indice_saida_base, vetor_indicial, linhas):
+def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, indice_entrada_base, indice_saida_base, vetor_indicial, linhas, colunas):
+    print(f"{particao_nbasica}\n\n {particao_basica}")
     # Realiza troca das colunas da base
     entrada_base = particao_nbasica[:,indice_entrada_base].copy()
     saida_base = particao_basica[:,indice_saida_base].copy()
     particao_basica[:,indice_saida_base] = entrada_base
     particao_nbasica[:,indice_entrada_base] = saida_base
-
+    print(particao_nbasica, particao_basica)
     # Realiza troca dos custos básicos
     entrada_custo = custos_nbasicos[indice_entrada_base]
     saida_custo = custos_basicos[indice_saida_base]
@@ -101,10 +104,14 @@ def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasico
     custos_nbasicos[indice_entrada_base] = saida_custo
 
     # Realiza atualização do vetor indicial
+    # print(indice_entrada_base)
+    # print(indice_saida_base)
     entrada_indicial = vetor_indicial[indice_entrada_base]
-    saida_indicial = vetor_indicial[indice_saida_base] + linhas
-    vetor_indicial[saida_indicial] = entrada_indicial
-    vetor_indicial[entrada_indicial] = saida_indicial
+    saida_indicial = vetor_indicial[indice_saida_base + abs(linhas-colunas)]
+    print(vetor_indicial)
+    vetor_indicial[indice_saida_base + abs(linhas-colunas)] = entrada_indicial
+    vetor_indicial[indice_entrada_base] = saida_indicial
+    print(vetor_indicial)
 
 
 
@@ -120,7 +127,7 @@ def imprime_otima(xb, custos_basicos, indice_final):
     #Impressão
     print("Solução atual é ótima.")
     print("Valor ótimo da solução: ", valor_atual)
-    print(f"Variáveis ótimas: {indice_final} = {xb}\nAs variáveis restantes são 0.")
+    print(f"Variáveis ótimas: {np.sort(indice_final)} = {xb}\nAs variáveis restantes são 0.")
 
 def main():
     
@@ -135,7 +142,7 @@ def main():
         indice_saida_base = indice_saida(xb, particao_basica, particao_nbasica, indice_entrada_base) #direcao de passo
         if indice_saida_base == (-1): #Se direcao é negativa ... O problema é ilimitado.
             print("O problema não tem solução ótima finita.")
-            exit(0)
+            quit(0)
         else:
             #Funcao que faz a troca (lembrar de informar quais variaveis estao em cada particao na iteracao atual).
             particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial = troca_base(particao_basica,
@@ -145,7 +152,8 @@ def main():
                                                                                                 indice_entrada_base,
                                                                                                 indice_saida_base,
                                                                                                 vetor_indicial,
-                                                                                                linhas)
+                                                                                                linhas,
+                                                                                                colunas)
             
             
 
