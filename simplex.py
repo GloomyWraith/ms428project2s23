@@ -12,7 +12,7 @@ import numpy as np
 def entrada():
     #Lê o tamanho da matriz de restrições
     linhas = int(input("Informe o tamanho da matriz.\nLinhas: "))
-    colunas = int(input("\nColunas: "))
+    colunas = int(input("\nColunas: \n"))
     #Cria uma matriz (A)mxn de zeros
     A = np.zeros(linhas*colunas, dtype=float).reshape(linhas, colunas)
 
@@ -21,10 +21,10 @@ def entrada():
         A[i] = input().split()
 
     #Atribui às entradas de b (vetor de recursos) os valores do input do usuário.
-    recursos = [float(b) for b in input("Informe o vetor dos recursos ("+str(linhas)+" entradas separadas por um espaço): ").split(sep = " ")]
+    recursos = [float(b) for b in input("Informe o vetor dos recursos ("+str(linhas)+" entradas separadas por um espaço): \n").split(sep = " ")]
 
     #Atribui às entradas de c (vetor de custos) os valores do input do usuário.
-    custos = [float(c) for c in input("Informe o vetor dos custos ("+str(colunas)+" entradas separadas por um espaço, incluindo zeros para as variáveis de folga): ").split(sep = " ")]
+    custos = [float(c) for c in input("Informe o vetor dos custos ("+str(colunas)+" entradas separadas por um espaço, incluindo zeros para as variáveis de folga): \n").split(sep = " ")]
 
     #TO DO: criar uma lista de tamanho len(custos) para lembrar o indice de quais var. estão na base.
 
@@ -44,8 +44,20 @@ def part(A,custos, linhas, colunas):
     custos_basicos = custos[abs(linhas-colunas):].copy()
     custos_nbasicos = custos[:abs(linhas-colunas)].copy()
     # vetor_indicial = list(range(1, colunas+1))
-    vetor_indicial = list(range(colunas))
-    return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial
+    if abs(colunas-linhas) == linhas:
+        vetor_indicial_basico = list(range(linhas+1, colunas+1))
+        vetor_indicial_nbasico = list(range(1, linhas+1))
+    elif (linhas % 2 != 0) & (colunas % 2 != 0):
+        vetor_indicial_basico = list(range(linhas, colunas+1))
+        vetor_indicial_nbasico = list(range(1, linhas))
+    elif (linhas % 2 == 0) & (colunas % 2 == 0):
+        vetor_indicial_basico = list(range(colunas-linhas+1,colunas+1))
+        vetor_indicial_nbasico = list(range(1, linhas-1))
+
+
+    return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial_basico, vetor_indicial_nbasico
+
+
 
 # Procura uma solução básica factível, Xb.
 def solucao_basica(particao_basica, recursos):
@@ -56,7 +68,7 @@ def solucao_basica(particao_basica, recursos):
         # variavel_artificial = np.
         print("Solução básica factível não encontrada.")
         exit(0)
-    
+        
 #Função que calcula o valor da função objetivo considerando apenas a parte básica.
 def objetivo(custos_basicos, xb):
     valor_atual = np.dot(np.transpose(custos_basicos), xb)
@@ -65,7 +77,7 @@ def objetivo(custos_basicos, xb):
 #Função que calcula os custos relativos (e retorna o quê exatamente? Só os custos?) Ver tbm se a entrada recebe os parametros certos
 def relativos(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, linhas, colunas):
     lambda_simplex = np.linalg.solve(np.transpose(particao_basica), custos_basicos)
-    custos_relativos = [(custos_nbasicos[j] - np.dot(np.transpose(lambda_simplex), particao_nbasica[:,j])) for j in range(colunas-linhas)]
+    custos_relativos = [(custos_nbasicos[j] - np.dot(np.transpose(lambda_simplex), particao_nbasica[:,j])) for j in range(abs(linhas-colunas))]
     
     return custos_relativos
 
@@ -78,61 +90,69 @@ def otima(custos_relativos):
     else:
         return indice_entrada_base
     
+    
 def indice_saida(xb, particao_basica, particao_nbasica, indice_entrada_base):
     direcao_simplex = np.linalg.solve(particao_basica, particao_nbasica[:,indice_entrada_base])
     for i in list((direcao_simplex <= 0)):
         if i == False:
             np.seterr(divide="ignore")
             passo = np.divide(xb,direcao_simplex)
-            epsilon = min(passo)
+            epsilon = min(i for i in passo if i>0)
             indice_saida_base = np.where(passo == epsilon)[0][0]
             return indice_saida_base
     return (-1)
 
-def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, indice_entrada_base, indice_saida_base, vetor_indicial, linhas, colunas):
-    print(f"{particao_nbasica}\n\n {particao_basica}")
+def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, indice_entrada_base, indice_saida_base, vetor_indicial_basico, vetor_indicial_nbasico):
     # Realiza troca das colunas da base
     entrada_base = particao_nbasica[:,indice_entrada_base].copy()
     saida_base = particao_basica[:,indice_saida_base].copy()
     particao_basica[:,indice_saida_base] = entrada_base
     particao_nbasica[:,indice_entrada_base] = saida_base
-    print(particao_nbasica, particao_basica)
     # Realiza troca dos custos básicos
     entrada_custo = custos_nbasicos[indice_entrada_base]
     saida_custo = custos_basicos[indice_saida_base]
     custos_basicos[indice_saida_base] = entrada_custo
     custos_nbasicos[indice_entrada_base] = saida_custo
 
-    # Realiza atualização do vetor indicial
-    # print(indice_entrada_base)
-    # print(indice_saida_base)
-    entrada_indicial = vetor_indicial[indice_entrada_base]
-    saida_indicial = vetor_indicial[indice_saida_base + abs(linhas-colunas)]
-    print(vetor_indicial)
-    vetor_indicial[indice_saida_base + abs(linhas-colunas)] = entrada_indicial
-    vetor_indicial[indice_entrada_base] = saida_indicial
-    print(vetor_indicial)
+    # Realiza atualização dos vetores indiciais
+    entrada_indicial = vetor_indicial_nbasico[indice_entrada_base]
+    saida_indicial = vetor_indicial_basico[indice_saida_base]
+    vetor_indicial_basico[indice_saida_base] = entrada_indicial
+    vetor_indicial_nbasico[indice_entrada_base] = saida_indicial
+    # vetor_indicial_basico = sorted(vetor_indicial_basico)
+    # vetor_indicial_nbasico = sorted(vetor_indicial_nbasico)
 
 
 
-    return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial
+    return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial_basico, vetor_indicial_nbasico
 
 #TO DO: Incluir na impressão os indices da variáveis.
-def imprime_otima(xb, custos_basicos, indice_final):
+#TO DO: Incluir na impressão os indices da variáveis.
+def imprime_otima(xb, custos_basicos, indice_otimo, indice_resto):
     #Calcula o valor da solução ótima
     valor_atual = objetivo(custos_basicos, xb)
-    for i in range(len(indice_final)):
-        indice_final[i] = "x" + str(indice_final[i]) 
+
+    for i in range(len(indice_otimo)):
+        indice_otimo[i] = "x" + str(indice_otimo[i])
+    
+    for i in range(len(indice_resto)):
+        indice_resto[i] = "x" + str(indice_resto[i])
+
+    xn = np.zeros(len(indice_resto), dtype=float)
+    
 
     #Impressão
     print("Solução atual é ótima.")
     print("Valor ótimo da solução: ", valor_atual)
-    print(f"Variáveis ótimas: {np.sort(indice_final)} = {xb}\nAs variáveis restantes são 0.")
+    # print(f"Variáveis ótimas: {np.sort(indice_final)} = {xb}\nAs variáveis restantes são 0.")
+    print(f"Variáveis ótimas (xb): {indice_otimo} = {xb}")
+    print(f"Variáveis restantes (xn): {indice_resto} = {xn}")
 
 def main():
-    
+    k = 0
     A, recursos, custos, linhas, colunas = entrada()
-    particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial = part(A,custos, linhas, colunas)
+    print("\n")
+    particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial_basico, vetor_indicial_nbasico = part(A,custos, linhas, colunas)
     tamanho_basico = len(custos_basicos)
     xb = solucao_basica(particao_basica, recursos)
 
@@ -145,15 +165,14 @@ def main():
             quit(0)
         else:
             #Funcao que faz a troca (lembrar de informar quais variaveis estao em cada particao na iteracao atual).
-            particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial = troca_base(particao_basica,
+            particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial_basico, vetor_indicial_nbasico = troca_base(particao_basica,
                                                                                                 particao_nbasica,
                                                                                                 custos_basicos,
                                                                                                 custos_nbasicos,
                                                                                                 indice_entrada_base,
                                                                                                 indice_saida_base,
-                                                                                                vetor_indicial,
-                                                                                                linhas,
-                                                                                                colunas)
+                                                                                                vetor_indicial_basico,
+                                                                                                vetor_indicial_nbasico)
             
             
 
@@ -161,8 +180,12 @@ def main():
             custos_relativos = relativos(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, linhas, colunas)
             xb = solucao_basica(particao_basica, recursos)
     if(otima(custos_relativos)):
-        indice_final = [vetor_indicial[i]+1 for i in range(len(custos)-tamanho_basico, len(custos))]
-        imprime_otima(xb, custos_basicos, indice_final)
+        # indice_final = [vetor_indicial_basico[i]+1 for i in range(len(vetor_indicial_basico))]
+        indice_otimo = vetor_indicial_basico
+        indice_resto = vetor_indicial_nbasico
+        imprime_otima(xb, custos_basicos, indice_otimo, indice_resto)
+        k+=1
+        print("Solução encontrada após ", k, " iterações.")
         exit(0)
 
 main()
