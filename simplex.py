@@ -12,7 +12,7 @@ import numpy as np
 def entrada():
     #Lê o tamanho da matriz de restrições
     linhas = int(input("Informe o tamanho da matriz.\nLinhas: "))
-    colunas = int(input("\nColunas: \n"))
+    colunas = int(input("Colunas: "))
     #Cria uma matriz (A)mxn de zeros
     A = np.zeros(linhas*colunas, dtype=float).reshape(linhas, colunas)
 
@@ -127,7 +127,6 @@ def troca_base(particao_basica, particao_nbasica, custos_basicos, custos_nbasico
     return particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial_basico, vetor_indicial_nbasico
 
 #TO DO: Incluir na impressão os indices da variáveis.
-#TO DO: Incluir na impressão os indices da variáveis.
 def imprime_otima(xb, custos_basicos, indice_otimo, indice_resto):
     #Calcula o valor da solução ótima
     valor_atual = objetivo(custos_basicos, xb)
@@ -138,13 +137,11 @@ def imprime_otima(xb, custos_basicos, indice_otimo, indice_resto):
     for i in range(len(indice_resto)):
         indice_resto[i] = "x" + str(indice_resto[i])
 
-    xn = np.zeros(len(indice_resto), dtype=float)
-    
+    xn = np.zeros(len(indice_resto), dtype=float)  
 
     #Impressão
     print("Solução atual é ótima.")
     print("Valor ótimo da solução: ", valor_atual)
-    # print(f"Variáveis ótimas: {np.sort(indice_final)} = {xb}\nAs variáveis restantes são 0.")
     print(f"Variáveis ótimas (xb): {indice_otimo} = {xb}")
     print(f"Variáveis restantes (xn): {indice_resto} = {xn}")
 
@@ -152,7 +149,10 @@ def main():
     k = 0
     A, recursos, custos, linhas, colunas = entrada()
     print("\n")
-    particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial_basico, vetor_indicial_nbasico = part(A,custos, linhas, colunas)
+    particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, vetor_indicial_basico, vetor_indicial_nbasico = part(A,
+                                                                                                                             custos,
+                                                                                                                             linhas,
+                                                                                                                             colunas)
     tamanho_basico = len(custos_basicos)
     xb = solucao_basica(particao_basica, recursos)
 
@@ -179,12 +179,12 @@ def main():
             #refaz custo relativo
             custos_relativos = relativos(particao_basica, particao_nbasica, custos_basicos, custos_nbasicos, linhas, colunas)
             xb = solucao_basica(particao_basica, recursos)
+            k += 1
     if(otima(custos_relativos)):
         # indice_final = [vetor_indicial_basico[i]+1 for i in range(len(vetor_indicial_basico))]
         indice_otimo = vetor_indicial_basico
         indice_resto = vetor_indicial_nbasico
         imprime_otima(xb, custos_basicos, indice_otimo, indice_resto)
-        k+=1
         print("Solução encontrada após ", k, " iterações.")
         exit(0)
 
